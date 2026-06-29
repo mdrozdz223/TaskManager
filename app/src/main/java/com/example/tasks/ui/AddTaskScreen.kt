@@ -1,16 +1,26 @@
 package com.example.tasks.ui
 
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.tasks.model.Priority
 import com.example.tasks.model.Recurrence
 import com.example.tasks.model.Status
@@ -39,6 +49,26 @@ fun AddTaskScreen(viewModel: TaskViewModel, onNavigateBack: () -> Unit) {
     val timePickerState = rememberTimePickerState(initialHour = 12, initialMinute = 0)
 
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
+
+    var selectedImageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+
+    val multiplePhotoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia(),
+        onResult = { uris ->
+            selectedImageUris = uris
+            uris.forEach { uri ->
+                try {
+                    context.contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    )
 
     Scaffold(
         topBar = {
@@ -58,89 +88,127 @@ fun AddTaskScreen(viewModel: TaskViewModel, onNavigateBack: () -> Unit) {
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("Tytuł") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text("Opis") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 2
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Priorytet:", style = MaterialTheme.typography.labelLarge)
-            Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
             ) {
-                Priority.entries.forEach { priority ->
-                    FilterChip(
-                        selected = selectedPriority == priority,
-                        onClick = { selectedPriority = priority },
-                        label = { Text(priority.name) }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("Kategoria:", style = MaterialTheme.typography.labelLarge)
-            Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                categoriesList.forEach { category ->
-                    FilterChip(
-                        selected = selectedCategory == category,
-                        onClick = { selectedCategory = category },
-                        label = { Text(category) }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("Powtarzaj:", style = MaterialTheme.typography.labelLarge)
-            Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Recurrence.entries.forEach { recurrence ->
-                    FilterChip(
-                        selected = selectedRecurrence == recurrence,
-                        onClick = { selectedRecurrence = recurrence },
-                        label = { Text(recurrence.name) }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedButton(
-                onClick = { showDatePicker = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.DateRange, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    selectedDateMillis?.let {
-                        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(it))
-                    } ?: "Wybierz datę i godzinę powiadomienia"
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Tytuł") },
+                    modifier = Modifier.fillMaxWidth()
                 )
-            }
 
-            Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Opis") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Priorytet:", style = MaterialTheme.typography.labelLarge)
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Priority.entries.forEach { priority ->
+                        FilterChip(
+                            selected = selectedPriority == priority,
+                            onClick = { selectedPriority = priority },
+                            label = { Text(priority.name) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Kategoria:", style = MaterialTheme.typography.labelLarge)
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    categoriesList.forEach { category ->
+                        FilterChip(
+                            selected = selectedCategory == category,
+                            onClick = { selectedCategory = category },
+                            label = { Text(category) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Powtarzaj:", style = MaterialTheme.typography.labelLarge)
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Recurrence.entries.forEach { recurrence ->
+                        FilterChip(
+                            selected = selectedRecurrence == recurrence,
+                            onClick = { selectedRecurrence = recurrence },
+                            label = { Text(recurrence.name) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.DateRange, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        selectedDateMillis?.let {
+                            SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(it))
+                        } ?: "Wybierz datę i godzinę powiadomienia"
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Załączniki (Zdjęcia):", style = MaterialTheme.typography.labelLarge)
+
+                OutlinedButton(
+                    onClick = {
+                        multiplePhotoPickerLauncher.launch(
+                            androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                ) {
+                    Text("Wybierz zdjęcia z galerii")
+                }
+
+                if (selectedImageUris.isNotEmpty()) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                    ) {
+                        items(selectedImageUris) { uri ->
+                            AsyncImage(
+                                model = uri,
+                                contentDescription = "Wybrane zdjęcie",
+                                modifier = Modifier.size(80.dp),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                }
+            }
 
             Button(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
                 onClick = {
                     if (title.isNotBlank()) {
+                        val attachmentsString = if (selectedImageUris.isEmpty()) null
+                        else selectedImageUris.joinToString(",") { it.toString() }
+
                         val newTask = Task(
                             title = title,
                             description = description,
@@ -148,7 +216,8 @@ fun AddTaskScreen(viewModel: TaskViewModel, onNavigateBack: () -> Unit) {
                             category = selectedCategory,
                             recurrence = selectedRecurrence,
                             status = Status.TODO,
-                            dueDate = selectedDateMillis
+                            dueDate = selectedDateMillis,
+                            attachmentsJson = attachmentsString
                         )
                         viewModel.insertTask(newTask)
                         focusManager.clearFocus()
@@ -167,7 +236,7 @@ fun AddTaskScreen(viewModel: TaskViewModel, onNavigateBack: () -> Unit) {
             confirmButton = {
                 TextButton(onClick = {
                     showDatePicker = false
-                    showTimePicker = true // Po dacie otwieramy czas!
+                    showTimePicker = true
                 }) { Text("Dalej") }
             },
             dismissButton = {

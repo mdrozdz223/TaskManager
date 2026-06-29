@@ -52,6 +52,13 @@ class MainActivity : ComponentActivity() {
             TasksTheme(darkTheme = isDarkMode) {
                 val navController = rememberNavController()
 
+                LaunchedEffect(intent) {
+                    val taskId = intent.getIntExtra("TASK_ID", -1)
+                    if (taskId != -1) {
+                        navController.navigate("detail/$taskId")
+                    }
+                }
+
                 NavHost(navController = navController, startDestination = "list") {
                     composable("list") {
                         TaskListScreen(
