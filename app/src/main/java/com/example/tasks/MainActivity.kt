@@ -16,11 +16,29 @@ import com.example.tasks.ui.theme.TasksTheme
 import com.example.tasks.viewmodel.TaskViewModel
 import com.example.tasks.viewmodel.TaskViewModelFactory
 import com.example.tasks.ui.SettingsScreen
+import android.os.Build
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val permissionLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.RequestPermission()
+                ) { isGranted ->
+                    if (!isGranted) {
+                    }
+                }
+
+                LaunchedEffect(Unit) {
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+
             val app = applicationContext as TaskApplication
 
             val alarmScheduler = TaskAlarmScheduler(applicationContext)
