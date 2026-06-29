@@ -22,8 +22,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val app = applicationContext as TaskApplication
+
+            val alarmScheduler = TaskAlarmScheduler(applicationContext)
+
             val viewModel: TaskViewModel = viewModel(
-                factory = TaskViewModelFactory(app.repository)
+                factory = TaskViewModelFactory(app.repository, alarmScheduler)
             )
 
             val isDarkMode by viewModel.isDarkMode.collectAsState()
