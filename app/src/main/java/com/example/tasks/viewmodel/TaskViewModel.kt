@@ -18,6 +18,12 @@ class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
     private val _isDarkMode = MutableStateFlow(false)
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
 
+    private val _isNotificationsEnabled = MutableStateFlow(true)
+    val isNotificationsEnabled: StateFlow<Boolean> = _isNotificationsEnabled.asStateFlow()
+
+    fun toggleNotifications() {
+        _isNotificationsEnabled.value = !_isNotificationsEnabled.value
+    }
     fun toggleDarkMode() {
         _isDarkMode.value = !_isDarkMode.value
     }

@@ -15,6 +15,8 @@ import com.example.tasks.model.Status
 import com.example.tasks.viewmodel.TaskViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,6 +24,8 @@ fun AddTaskScreen(viewModel: TaskViewModel, onNavigateBack: () -> Unit) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedPriority by remember { mutableStateOf(Priority.MEDIUM) }
+    var selectedCategory by remember { mutableStateOf("Ogólne") }
+    val categoriesList = listOf("Ogólne", "Praca", "Dom", "Zakupy", "Osobiste")
 
     var showDatePicker by remember { mutableStateOf(false) }
     var selectedDateMillis by remember { mutableStateOf<Long?>(null) }
@@ -62,6 +66,24 @@ fun AddTaskScreen(viewModel: TaskViewModel, onNavigateBack: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Kategoria:", style = MaterialTheme.typography.labelLarge)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                categoriesList.forEach { category ->
+                    FilterChip(
+                        selected = selectedCategory == category,
+                        onClick = { selectedCategory = category },
+                        label = { Text(category) }
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
             Text("Wybierz priorytet:", style = MaterialTheme.typography.labelLarge)
@@ -105,6 +127,7 @@ fun AddTaskScreen(viewModel: TaskViewModel, onNavigateBack: () -> Unit) {
                             title = title,
                             description = description,
                             priority = selectedPriority,
+                            category = selectedCategory,
                             status = Status.TODO,
                             dueDate = selectedDateMillis
                         )

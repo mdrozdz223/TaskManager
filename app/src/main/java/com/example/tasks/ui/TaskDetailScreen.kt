@@ -30,6 +30,9 @@ fun TaskDetailScreen(viewModel: TaskViewModel, taskId: Int, onBack: () -> Unit) 
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate)
 
+    var selectedCategory by remember(task) { mutableStateOf(task?.category ?: "Ogólne") }
+    val categoriesList = listOf("Ogólne", "Praca", "Dom", "Zakupy", "Osobiste")
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -102,6 +105,7 @@ fun TaskDetailScreen(viewModel: TaskViewModel, taskId: Int, onBack: () -> Unit) 
                             title = title,
                             description = description,
                             priority = selectedPriority,
+                            category = selectedCategory,
                             dueDate = selectedDate
                         )
                         viewModel.updateTask(updatedTask)

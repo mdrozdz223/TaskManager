@@ -14,6 +14,7 @@ import com.example.tasks.viewmodel.TaskViewModel
 @Composable
 fun SettingsScreen(viewModel: TaskViewModel, onNavigateBack: () -> Unit) {
     val isDarkMode by viewModel.isDarkMode.collectAsState()
+    val isNotificationsEnabled by viewModel.isNotificationsEnabled.collectAsState()
 
     Scaffold(
         topBar = {
@@ -33,6 +34,8 @@ fun SettingsScreen(viewModel: TaskViewModel, onNavigateBack: () -> Unit) {
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
+            Text("Wygląd", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -44,10 +47,29 @@ fun SettingsScreen(viewModel: TaskViewModel, onNavigateBack: () -> Unit) {
                     onCheckedChange = { viewModel.toggleDarkMode() }
                 )
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text = "Wybierz tryb wizualny aplikacji. Tryb ciemny oszczędza baterię na ekranach OLED.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Divider(modifier = Modifier.padding(vertical = 16.dp))
+
+            Text("Powiadomienia", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Przypomnienia czasowe", style = MaterialTheme.typography.bodyLarge)
+                Switch(
+                    checked = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.toggleNotifications() }
+                )
+            }
+            Text(
+                text = "Zezwalaj aplikacji na wysyłanie przypomnień o zbliżających się zadaniach.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
