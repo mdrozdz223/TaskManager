@@ -58,9 +58,12 @@ class TaskViewModel(
 
 
     fun insertTask(task: Task) = viewModelScope.launch {
-        repository.insertTask(task)
+        val generatedId = repository.insertTask(task)
+
+        val taskWithRealId = task.copy(id = generatedId.toInt())
+
         if (isNotificationsEnabled.value) {
-            alarmScheduler.schedule(task)
+            alarmScheduler.schedule(taskWithRealId)
         }
     }
 
