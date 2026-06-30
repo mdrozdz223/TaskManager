@@ -25,7 +25,7 @@ fun TaskListScreen(
 ) {
     val filteredTasks by viewModel.filteredTasks.collectAsState()
     val currentFilter by viewModel.currentFilter.collectAsState()
-
+    val searchQuery by viewModel.searchQuery.collectAsState()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -66,6 +66,16 @@ fun TaskListScreen(
                     )
                 }
             }
+
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.setSearchQuery(it) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                label = { Text("Szukaj zadania...") },
+                singleLine = true
+            )
 
             if (filteredTasks.isEmpty()) {
                 Box(

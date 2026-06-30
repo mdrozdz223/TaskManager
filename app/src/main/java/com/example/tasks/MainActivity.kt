@@ -29,22 +29,32 @@ class MainActivity : ComponentActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestPermission()
-                ) { isGranted ->
-                    if (!isGranted) {
-                    }
-                }
-
+                ) {}
                 LaunchedEffect(Unit) {
                     permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
 
-            val app = applicationContext as TaskApplication
+            val locationLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestMultiplePermissions()
+            ) {}
+            LaunchedEffect(Unit) {
+                locationLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                    )
+                )
+            }
 
+            val app = applicationContext as TaskApplication
             val alarmScheduler = TaskAlarmScheduler(applicationContext)
 
+            val geofenceHelper = GeofenceHelper(applicationContext)
+
             val viewModel: TaskViewModel = viewModel(
-                factory = TaskViewModelFactory(app.repository, alarmScheduler)
+                factory = TaskViewModelFactory(app.repository, alarmScheduler, geofenceHelper)
             )
 
             val isDarkMode by viewModel.isDarkMode.collectAsState()

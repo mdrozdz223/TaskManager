@@ -4,6 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -12,13 +14,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.example.tasks.model.Priority
 import com.example.tasks.model.Recurrence
@@ -29,7 +36,13 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
+import androidx.compose.material.icons.filled.LocationOn
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskDetailScreen(viewModel: TaskViewModel, taskId: Int, onBack: () -> Unit) {
@@ -52,6 +65,8 @@ fun TaskDetailScreen(viewModel: TaskViewModel, taskId: Int, onBack: () -> Unit) 
     val timePickerState = rememberTimePickerState(initialHour = 12, initialMinute = 0)
 
     val context = LocalContext.current
+
+    var expandedImageUri by remember { mutableStateOf<Uri?>(null) }
 
     var selectedImageUris by remember(task) {
         val json = task?.attachmentsJson
@@ -81,6 +96,21 @@ fun TaskDetailScreen(viewModel: TaskViewModel, taskId: Int, onBack: () -> Unit) 
             }
         }
     )
+
+    var selectedLocation by remember(task) {
+        mutableStateOf(
+            if (task?.latitude != null && task?.longitude != null) {
+                LatLng(task.latitude!!, task.longitude!!)
+            } else null
+        )
+    }
+
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(
+            selectedLocation ?: LatLng(51.7592, 19.4560),
+            if (selectedLocation != null) 15f else 5f
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -205,9 +235,70 @@ fun TaskDetailScreen(viewModel: TaskViewModel, taskId: Int, onBack: () -> Unit) 
                                 AsyncImage(
                                     model = uri,
                                     contentDescription = "Załączone zdjęcie",
-                                    modifier = Modifier.size(80.dp),
+                                    modifier = Modifier
+                                        .size(80.dp)
+                                        .clickable { expandedImageUri = uri },
                                     contentScale = ContentScale.Crop
                                 )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Lokalizacja (Wybierz na mapie):", style = MaterialTheme.typography.labelLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp)
+                    ) {
+                        GoogleMap(
+                            modifier = Modifier.fillMaxSize(),
+                            cameraPositionState = cameraPositionState,
+                            onMapClick = { latLng ->
+                                selectedLocation = latLng
+                            }
+                        ) {
+                            selectedLocation?.let { location ->
+                                Marker(
+                                    state = MarkerState(position = location),
+                                    title = "Lokalizacja zadania",
+                                    snippet = title
+                                )
+                            }
+                        }
+                    }
+
+                    if (selectedLocation != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Button(
+                                onClick = {
+                                    val lat = selectedLocation!!.latitude
+                                    val lng = selectedLocation!!.longitude
+                                    val gmmIntentUri = Uri.parse("google.navigation:q=$lat,$lng")
+                                    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                                    mapIntent.setPackage("com.google.android.apps.maps")
+                                    try {
+                                        context.startActivity(mapIntent)
+                                    } catch (e: Exception) {
+                                        mapIntent.setPackage(null)
+                                        context.startActivity(mapIntent)
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Default.LocationOn, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Wyznacz trasę")
+                            }
+
+                            TextButton(
+                                onClick = { selectedLocation = null }
+                            ) {
+                                Text("Usuń", color = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
@@ -228,13 +319,44 @@ fun TaskDetailScreen(viewModel: TaskViewModel, taskId: Int, onBack: () -> Unit) 
                             category = selectedCategory,
                             recurrence = selectedRecurrence,
                             dueDate = selectedDate,
-                            attachmentsJson = attachmentsString
+                            attachmentsJson = attachmentsString,
+                            latitude = selectedLocation?.latitude, // <- Zapis szerokości
+                            longitude = selectedLocation?.longitude // <- Zapis długości
                         )
                         viewModel.updateTask(updatedTask)
                         onBack()
                     }
                 ) {
                     Text("Zapisz zmiany")
+                }
+            }
+        }
+
+        if (expandedImageUri != null) {
+            Dialog(
+                onDismissRequest = { expandedImageUri = null },
+                properties = DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black)
+                ) {
+                    AsyncImage(
+                        model = expandedImageUri,
+                        contentDescription = "Powiększone zdjęcie",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+
+                    IconButton(
+                        onClick = { expandedImageUri = null },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(16.dp)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Zamknij", tint = Color.White)
+                    }
                 }
             }
         }

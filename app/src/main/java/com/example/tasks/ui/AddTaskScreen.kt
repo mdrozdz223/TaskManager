@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -28,6 +29,12 @@ import com.example.tasks.model.Task
 import com.example.tasks.viewmodel.TaskViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,6 +76,12 @@ fun AddTaskScreen(viewModel: TaskViewModel, onNavigateBack: () -> Unit) {
             }
         }
     )
+
+    var selectedLocation by remember { mutableStateOf<LatLng?>(null) }
+
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(LatLng(51.7592, 19.4560), 5f) // Początkowo widok na Łódź/Polskę
+    }
 
     Scaffold(
         topBar = {
@@ -198,6 +211,41 @@ fun AddTaskScreen(viewModel: TaskViewModel, onNavigateBack: () -> Unit) {
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Lokalizacja (Wybierz na mapie):", style = MaterialTheme.typography.labelLarge)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp)
+                ) {
+                    GoogleMap(
+                        modifier = Modifier.fillMaxSize(),
+                        cameraPositionState = cameraPositionState,
+                        onMapClick = { latLng ->
+                            selectedLocation = latLng
+                        }
+                    ) {
+                        selectedLocation?.let { location ->
+                            Marker(
+                                state = MarkerState(position = location),
+                                title = "Lokalizacja nowego zadania",
+                                snippet = title
+                            )
+                        }
+                    }
+                }
+
+                if (selectedLocation != null) {
+                    TextButton(
+                        onClick = { selectedLocation = null },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("Usuń lokalizację", color = MaterialTheme.colorScheme.error)
+                    }
+                }
             }
 
             Button(
@@ -217,7 +265,9 @@ fun AddTaskScreen(viewModel: TaskViewModel, onNavigateBack: () -> Unit) {
                             recurrence = selectedRecurrence,
                             status = Status.TODO,
                             dueDate = selectedDateMillis,
-                            attachmentsJson = attachmentsString
+                            attachmentsJson = attachmentsString,
+                            latitude = selectedLocation?.latitude,
+                            longitude = selectedLocation?.longitude
                         )
                         viewModel.insertTask(newTask)
                         focusManager.clearFocus()
@@ -251,9 +301,7 @@ fun AddTaskScreen(viewModel: TaskViewModel, onNavigateBack: () -> Unit) {
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
             title = { Text("Wybierz godzinę") },
-            text = {
-                TimePicker(state = timePickerState)
-            },
+            text = { TimePicker(state = timePickerState) },
             confirmButton = {
                 TextButton(onClick = {
                     val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
